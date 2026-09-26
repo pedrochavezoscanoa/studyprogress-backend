@@ -408,6 +408,8 @@ Resend fue elegido como servicio externo de correo por su integración sencilla 
 Curso: CS2031 - Desarrollo Basado en Plataformas  
 Proyecto: StudyProgress  
 Ciclo: 2026-2  
+Grupo: Grupo 7
+
 
 Integrantes:
 
