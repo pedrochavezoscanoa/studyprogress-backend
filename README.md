@@ -383,11 +383,42 @@ El repositorio debe mantener `.gitignore` actualizado y evitar archivos locales,
 
 Como mejora de integración continua se puede incorporar GitHub Actions para ejecutar automáticamente compilación y pruebas con Maven en cada push o pull request.
 
-## Despliegue
+## Despliegue en Producción (AWS)
 
-Durante el desarrollo el sistema se ejecuta localmente con PostgreSQL.
+El backend de StudyProgress se encuentra completamente desplegado y operativo en la infraestructura en la nube de **Amazon Web Services (AWS)** bajo una arquitectura desacoplada de alta disponibilidad:
 
-El despliegue final está planteado para utilizar una instancia de aplicación en AWS y una base de datos PostgreSQL administrada. Las credenciales y claves deben configurarse como variables de entorno del servicio y nunca formar parte del repositorio.
+* **Documentación Interactiva Swagger UI:** [http://3.238.147.129:8080/swagger-ui.html](http://3.238.147.129:8080/swagger-ui.html)
+* **URL Base de la API REST:** `http://3.238.147.129:8080/api/v1`
+
+---
+
+### Arquitectura de Despliegue en AWS
+
+1. **Servidor de Aplicación (Amazon EC2):**
+   * **Instancia:** `t3.micro` con Ubuntu Server.
+   * **Runtime:** Contenedor Docker multi-stage optimizado sobre Eclipse Temurin 17 JRE Alpine.
+   * **Firewall (Security Groups):** Puertos 22 (SSH administrativo) y 8080 (Ingreso público para peticiones HTTP y Swagger).
+
+2. **Capa de Persistencia (Amazon RDS):**
+   * **Motor:** PostgreSQL 16 administrado en instancia `db.t4g.micro`.
+   * **Seguridad de Red:** Conexión aislada mediante Security Groups en el puerto 5432.
+   * **Base de Datos Inicial:** `studyprogress_db` con mapeo automático de entidades JPA / Hibernate.
+
+3. **Gestión de Variables de Entorno:**
+   Siguiendo las mejores prácticas de seguridad, las credenciales no forman parte del repositorio y se inyectan en tiempo de ejecución del contenedor:
+   * `SPRING_DATASOURCE_URL`: Cadena JDBC hacia el endpoint privado de Amazon RDS.
+   * `SPRING_DATASOURCE_USERNAME`: Usuario maestro de la base de datos.
+   * `SPRING_DATASOURCE_PASSWORD`: Contraseña protegida del clúster de datos.
+   * `JWT_SECRET`: Clave criptográfica para la firma y verificación de tokens HMAC-SHA256.
+
+---
+
+### Ejecución Local para Desarrollo
+Para levantar el entorno de base de datos localmente:
+```bash
+docker-compose up -d
+./mvnw clean spring-boot:run
+```
 
 **URL de despliegue:** pendiente de completar.
 
