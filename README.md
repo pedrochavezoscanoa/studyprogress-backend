@@ -416,8 +416,8 @@ Integrantes:
 - Pedro Maximo Chavez Oscanoa
 - Marcelo Mateo Rosillo Rodriguez 
 - Jorge Andrés Cuevas Sánchez
-- Aquino Reyna, Jesús Emmanuel
-
+- Aquino Reyna Jesús Emmanuel
+- Leonardo Martinez Aquino
 ## Conclusiones
 
 StudyProgress implementa un backend orientado a la organización académica con una arquitectura en capas, autenticación JWT, autorización por roles, persistencia en PostgreSQL, validaciones, manejo global de excepciones, DTOs, eventos y procesamiento asíncrono.
