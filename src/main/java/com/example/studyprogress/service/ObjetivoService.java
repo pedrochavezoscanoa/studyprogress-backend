@@ -1,5 +1,6 @@
 package com.example.studyprogress.service;
 
+import com.example.studyprogress.dto.ObjetivoRequest;
 import com.example.studyprogress.model.Objetivo;
 import com.example.studyprogress.model.Usuario;
 
@@ -20,4 +21,23 @@ public interface ObjetivoService {
     Optional<Objetivo> buscarPorId(Long id);
 
     void eliminarObjetivo(Long id);
+
+    Objetivo crearObjetivo(
+            ObjetivoRequest request,
+            String email
+    );
+
+    List<Objetivo> listarObjetivosDelUsuario(
+            String email
+    );
+
+    Objetivo completarObjetivo(
+            Long id,
+            String email
+    );
+
+    void eliminarObjetivoDelUsuario(
+            Long id,
+            String email
+    );
 }

@@ -1,6 +1,8 @@
 package com.example.studyprogress.service;
 
+import com.example.studyprogress.model.Usuario;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,50 +21,107 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long expiration;
 
-    private SecretKey getSigningKey() {
+    private SecretKey obtenerClave() {
         return Keys.hmacShaKeyFor(
                 secret.getBytes(StandardCharsets.UTF_8)
         );
     }
 
-    public String generarToken(String email) {
+    public String generarToken(
+            Usuario usuario
+    ) {
 
         Date ahora = new Date();
 
         Date fechaExpiracion =
-                new Date(ahora.getTime() + expiration);
+                new Date(
+                        ahora.getTime() + expiration
+                );
 
         return Jwts.builder()
-                .subject(email)
+                .subject(usuario.getEmail())
+                .claim("userId", usuario.getId())
+                .claim("email", usuario.getEmail())
+                .claim("role", usuario.getRol())
                 .issuedAt(ahora)
                 .expiration(fechaExpiracion)
-                .signWith(getSigningKey())
+                .signWith(obtenerClave())
                 .compact();
     }
 
-    public String obtenerEmail(String token) {
+    public Claims obtenerClaims(
+            String token
+    ) {
 
-        Claims claims = Jwts.parser()
-                .verifyWith(getSigningKey())
+        return Jwts.parser()
+                .verifyWith(obtenerClave())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
-        return claims.getSubject();
     }
 
-    public boolean validarToken(String token) {
+    public String extraerEmail(
+            String token
+    ) {
+
+        return obtenerClaims(token)
+                .get(
+                        "email",
+                        String.class
+                );
+    }
+
+    public String extraerRol(
+            String token
+    ) {
+
+        return obtenerClaims(token)
+                .get(
+                        "role",
+                        String.class
+                );
+    }
+
+    public Long extraerUsuarioId(
+            String token
+    ) {
+
+        Number usuarioId =
+                obtenerClaims(token)
+                        .get(
+                                "userId",
+                                Number.class
+                        );
+
+        if (usuarioId == null) {
+            return null;
+        }
+
+        return usuarioId.longValue();
+    }
+
+    public boolean validarToken(
+            String token
+    ) {
 
         try {
 
-            Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token);
+            Claims claims =
+                    obtenerClaims(token);
 
-            return true;
+            Date expiracion =
+                    claims.getExpiration();
 
-        } catch (Exception e) {
+            return expiracion != null
+                    && expiracion.after(
+                    new Date()
+            );
+
+        } catch (
+                JwtException |
+                IllegalArgumentException e
+        ) {
+
             return false;
         }
     }

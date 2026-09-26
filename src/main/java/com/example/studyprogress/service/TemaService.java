@@ -1,5 +1,6 @@
 package com.example.studyprogress.service;
 
+import com.example.studyprogress.dto.TemaRequest;
 import com.example.studyprogress.model.Curso;
 import com.example.studyprogress.model.Tema;
 
@@ -15,4 +16,25 @@ public interface TemaService {
     Optional<Tema> buscarPorId(Long id);
 
     void eliminarTema(Long id);
+
+    Tema crearTema(
+            Long cursoId,
+            TemaRequest request,
+            String email
+    );
+
+    List<Tema> listarTemasDelCurso(
+            Long cursoId,
+            String email
+    );
+
+    Tema completarTema(
+            Long id,
+            String email
+    );
+
+    void eliminarTemaDelUsuario(
+            Long id,
+            String email
+    );
 }

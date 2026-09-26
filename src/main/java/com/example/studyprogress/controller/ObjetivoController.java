@@ -1,154 +1,99 @@
 package com.example.studyprogress.controller;
 
 import com.example.studyprogress.dto.ObjetivoRequest;
+import com.example.studyprogress.dto.ObjetivoResponseDTO;
+import com.example.studyprogress.mapper.ObjetivoMapper;
 import com.example.studyprogress.model.Objetivo;
-import com.example.studyprogress.model.Usuario;
-import com.example.studyprogress.service.GamificacionService;
 import com.example.studyprogress.service.ObjetivoService;
-import com.example.studyprogress.service.UsuarioService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/objetivos")
 public class ObjetivoController {
 
     private final ObjetivoService objetivoService;
-    private final UsuarioService usuarioService;
-    private final GamificacionService gamificacionService;
+    private final ObjetivoMapper objetivoMapper;
 
     public ObjetivoController(
             ObjetivoService objetivoService,
-            UsuarioService usuarioService,
-            GamificacionService gamificacionService
+            ObjetivoMapper objetivoMapper
     ) {
         this.objetivoService = objetivoService;
-        this.usuarioService = usuarioService;
-        this.gamificacionService = gamificacionService;
+        this.objetivoMapper = objetivoMapper;
     }
 
     @PostMapping
-    public ResponseEntity<?> crearObjetivo(
-            @RequestBody ObjetivoRequest request,
+    public ResponseEntity<ObjetivoResponseDTO> crearObjetivo(
+            @Valid @RequestBody ObjetivoRequest request,
             Authentication authentication
     ) {
 
-        Optional<Usuario> usuarioOptional =
-                usuarioService.buscarPorEmail(
+        Objetivo objetivo =
+                objetivoService.crearObjetivo(
+                        request,
                         authentication.getName()
                 );
 
-        if (usuarioOptional.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body("Usuario no encontrado");
-        }
-
-        Usuario usuario = usuarioOptional.get();
-
-        Objetivo objetivo = new Objetivo(
-                request.getTitulo(),
-                request.getDescripcion(),
-                request.getFechaLimite(),
-                usuario
-        );
-
-        return ResponseEntity.ok(
-                objetivoService.guardarObjetivo(objetivo)
-        );
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        objetivoMapper.toDTO(objetivo)
+                );
     }
 
     @GetMapping
-    public ResponseEntity<?> listarObjetivos(
+    public ResponseEntity<List<ObjetivoResponseDTO>> listarObjetivos(
             Authentication authentication
     ) {
 
-        Optional<Usuario> usuarioOptional =
-                usuarioService.buscarPorEmail(
-                        authentication.getName()
-                );
-
-        if (usuarioOptional.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body("Usuario no encontrado");
-        }
-
-        List<Objetivo> objetivos =
-                objetivoService.listarObjetivosPorUsuario(
-                        usuarioOptional.get()
-                );
+        List<ObjetivoResponseDTO> objetivos =
+                objetivoService
+                        .listarObjetivosDelUsuario(
+                                authentication.getName()
+                        )
+                        .stream()
+                        .map(objetivoMapper::toDTO)
+                        .toList();
 
         return ResponseEntity.ok(objetivos);
     }
 
     @PutMapping("/{id}/completar")
-    public ResponseEntity<?> completarObjetivo(
+    public ResponseEntity<ObjetivoResponseDTO> completarObjetivo(
             @PathVariable Long id,
             Authentication authentication
     ) {
 
-        Optional<Objetivo> objetivoOptional =
-                objetivoService.buscarPorId(id);
+        Objetivo objetivo =
+                objetivoService.completarObjetivo(
+                        id,
+                        authentication.getName()
+                );
 
-        if (objetivoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Objetivo objetivo = objetivoOptional.get();
-
-        if (!objetivo.getUsuario()
-                .getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes acceso a este objetivo");
-        }
-
-        if (!objetivo.isCompletado()) {
-
-            objetivo.setCompletado(true);
-
-            objetivoService.guardarObjetivo(objetivo);
-
-            gamificacionService.sumarPuntos(
-                    objetivo.getUsuario(),
-                    30
-            );
-        }
-
-        return ResponseEntity.ok(objetivo);
+        return ResponseEntity.ok(
+                objetivoMapper.toDTO(objetivo)
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarObjetivo(
+    public ResponseEntity<Void> eliminarObjetivo(
             @PathVariable Long id,
             Authentication authentication
     ) {
 
-        Optional<Objetivo> objetivoOptional =
-                objetivoService.buscarPorId(id);
-
-        if (objetivoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Objetivo objetivo = objetivoOptional.get();
-
-        if (!objetivo.getUsuario()
-                .getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes permiso para eliminar este objetivo");
-        }
-
-        objetivoService.eliminarObjetivo(id);
-
-        return ResponseEntity.ok(
-                "Objetivo eliminado correctamente"
+        objetivoService.eliminarObjetivoDelUsuario(
+                id,
+                authentication.getName()
         );
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

@@ -1,5 +1,6 @@
 package com.example.studyprogress.service;
 
+import com.example.studyprogress.dto.TareaRequest;
 import com.example.studyprogress.model.Curso;
 import com.example.studyprogress.model.Tarea;
 
@@ -20,4 +21,25 @@ public interface TareaService {
     Optional<Tarea> buscarPorId(Long id);
 
     void eliminarTarea(Long id);
+
+    Tarea crearTarea(
+            Long cursoId,
+            TareaRequest request,
+            String email
+    );
+
+    List<Tarea> listarTareasDelCurso(
+            Long cursoId,
+            String email
+    );
+
+    Tarea completarTarea(
+            Long id,
+            String email
+    );
+
+    void eliminarTareaDelUsuario(
+            Long id,
+            String email
+    );
 }

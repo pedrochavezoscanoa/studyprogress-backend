@@ -2,159 +2,105 @@ package com.example.studyprogress.controller;
 
 import com.example.studyprogress.dto.CalificacionRequest;
 import com.example.studyprogress.dto.EvaluacionRequest;
-import com.example.studyprogress.model.Curso;
+import com.example.studyprogress.dto.EvaluacionResponseDTO;
+import com.example.studyprogress.mapper.EvaluacionMapper;
 import com.example.studyprogress.model.Evaluacion;
-import com.example.studyprogress.service.CursoService;
 import com.example.studyprogress.service.EvaluacionService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
 public class EvaluacionController {
 
     private final EvaluacionService evaluacionService;
-    private final CursoService cursoService;
+    private final EvaluacionMapper evaluacionMapper;
 
     public EvaluacionController(
             EvaluacionService evaluacionService,
-            CursoService cursoService
+            EvaluacionMapper evaluacionMapper
     ) {
         this.evaluacionService = evaluacionService;
-        this.cursoService = cursoService;
+        this.evaluacionMapper = evaluacionMapper;
     }
 
     @PostMapping("/cursos/{cursoId}/evaluaciones")
-    public ResponseEntity<?> crearEvaluacion(
+    public ResponseEntity<EvaluacionResponseDTO> crearEvaluacion(
             @PathVariable Long cursoId,
-            @RequestBody EvaluacionRequest request,
+            @Valid @RequestBody EvaluacionRequest request,
             Authentication authentication
     ) {
 
-        Optional<Curso> cursoOptional =
-                cursoService.buscarPorId(cursoId);
+        Evaluacion evaluacion =
+                evaluacionService.crearEvaluacion(
+                        cursoId,
+                        request,
+                        authentication.getName()
+                );
 
-        if (cursoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Curso curso = cursoOptional.get();
-
-        if (!curso.getUsuario().getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes acceso a este curso");
-        }
-
-        Evaluacion evaluacion = new Evaluacion(
-                request.getTitulo(),
-                request.getDescripcion(),
-                request.getFecha(),
-                request.getTipo(),
-                request.getPonderacion(),
-                curso
-        );
-
-        return ResponseEntity.ok(
-                evaluacionService.guardarEvaluacion(evaluacion)
-        );
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        evaluacionMapper.toDTO(evaluacion)
+                );
     }
 
     @GetMapping("/cursos/{cursoId}/evaluaciones")
-    public ResponseEntity<?> listarEvaluaciones(
+    public ResponseEntity<List<EvaluacionResponseDTO>> listarEvaluaciones(
             @PathVariable Long cursoId,
             Authentication authentication
     ) {
 
-        Optional<Curso> cursoOptional =
-                cursoService.buscarPorId(cursoId);
-
-        if (cursoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Curso curso = cursoOptional.get();
-
-        if (!curso.getUsuario().getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes acceso a este curso");
-        }
-
-        List<Evaluacion> evaluaciones =
-                evaluacionService.listarEvaluacionesPorCurso(curso);
+        List<EvaluacionResponseDTO> evaluaciones =
+                evaluacionService
+                        .listarEvaluacionesDelCurso(
+                                cursoId,
+                                authentication.getName()
+                        )
+                        .stream()
+                        .map(evaluacionMapper::toDTO)
+                        .toList();
 
         return ResponseEntity.ok(evaluaciones);
     }
 
     @PutMapping("/evaluaciones/{id}/calificacion")
-    public ResponseEntity<?> registrarCalificacion(
+    public ResponseEntity<EvaluacionResponseDTO> registrarCalificacion(
             @PathVariable Long id,
-            @RequestBody CalificacionRequest request,
+            @Valid @RequestBody CalificacionRequest request,
             Authentication authentication
     ) {
 
-        Optional<Evaluacion> evaluacionOptional =
-                evaluacionService.buscarPorId(id);
-
-        if (evaluacionOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Evaluacion evaluacion = evaluacionOptional.get();
-
-        if (!evaluacion.getCurso()
-                .getUsuario()
-                .getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes acceso a esta evaluación");
-        }
-
-        evaluacion.setCalificacion(
-                request.getCalificacion()
-        );
+        Evaluacion evaluacion =
+                evaluacionService.registrarCalificacion(
+                        id,
+                        request,
+                        authentication.getName()
+                );
 
         return ResponseEntity.ok(
-                evaluacionService.guardarEvaluacion(evaluacion)
+                evaluacionMapper.toDTO(evaluacion)
         );
     }
 
     @DeleteMapping("/evaluaciones/{id}")
-    public ResponseEntity<?> eliminarEvaluacion(
+    public ResponseEntity<Void> eliminarEvaluacion(
             @PathVariable Long id,
             Authentication authentication
     ) {
 
-        Optional<Evaluacion> evaluacionOptional =
-                evaluacionService.buscarPorId(id);
-
-        if (evaluacionOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Evaluacion evaluacion = evaluacionOptional.get();
-
-        if (!evaluacion.getCurso()
-                .getUsuario()
-                .getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes permiso para eliminar esta evaluación");
-        }
-
-        evaluacionService.eliminarEvaluacion(id);
-
-        return ResponseEntity.ok(
-                "Evaluación eliminada correctamente"
+        evaluacionService.eliminarEvaluacionDelUsuario(
+                id,
+                authentication.getName()
         );
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

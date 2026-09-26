@@ -1,171 +1,103 @@
 package com.example.studyprogress.controller;
 
 import com.example.studyprogress.dto.TareaRequest;
-import com.example.studyprogress.model.Curso;
+import com.example.studyprogress.dto.TareaResponseDTO;
+import com.example.studyprogress.mapper.TareaMapper;
 import com.example.studyprogress.model.Tarea;
-import com.example.studyprogress.model.Usuario;
-import com.example.studyprogress.service.CursoService;
-import com.example.studyprogress.service.GamificacionService;
 import com.example.studyprogress.service.TareaService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
 public class TareaController {
 
     private final TareaService tareaService;
-    private final CursoService cursoService;
-    private final GamificacionService gamificacionService;
+    private final TareaMapper tareaMapper;
 
     public TareaController(
             TareaService tareaService,
-            CursoService cursoService,
-            GamificacionService gamificacionService
+            TareaMapper tareaMapper
     ) {
         this.tareaService = tareaService;
-        this.cursoService = cursoService;
-        this.gamificacionService = gamificacionService;
+        this.tareaMapper = tareaMapper;
     }
 
     @PostMapping("/cursos/{cursoId}/tareas")
-    public ResponseEntity<?> crearTarea(
+    public ResponseEntity<TareaResponseDTO> crearTarea(
             @PathVariable Long cursoId,
-            @RequestBody TareaRequest request,
+            @Valid @RequestBody TareaRequest request,
             Authentication authentication
     ) {
 
-        Optional<Curso> cursoOptional =
-                cursoService.buscarPorId(cursoId);
+        Tarea tarea =
+                tareaService.crearTarea(
+                        cursoId,
+                        request,
+                        authentication.getName()
+                );
 
-        if (cursoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Curso curso = cursoOptional.get();
-
-        if (!curso.getUsuario().getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes acceso a este curso");
-        }
-
-        Tarea tarea = new Tarea(
-                request.getTitulo(),
-                request.getDescripcion(),
-                request.getFechaLimite(),
-                request.getPrioridad(),
-                curso
-        );
-
-        return ResponseEntity.ok(
-                tareaService.guardarTarea(tarea)
-        );
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        tareaMapper.toDTO(tarea)
+                );
     }
 
     @GetMapping("/cursos/{cursoId}/tareas")
-    public ResponseEntity<?> listarTareas(
+    public ResponseEntity<List<TareaResponseDTO>> listarTareas(
             @PathVariable Long cursoId,
             Authentication authentication
     ) {
 
-        Optional<Curso> cursoOptional =
-                cursoService.buscarPorId(cursoId);
-
-        if (cursoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Curso curso = cursoOptional.get();
-
-        if (!curso.getUsuario().getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes acceso a este curso");
-        }
-
-        List<Tarea> tareas =
-                tareaService.listarTareasPorCurso(curso);
+        List<TareaResponseDTO> tareas =
+                tareaService
+                        .listarTareasDelCurso(
+                                cursoId,
+                                authentication.getName()
+                        )
+                        .stream()
+                        .map(tareaMapper::toDTO)
+                        .toList();
 
         return ResponseEntity.ok(tareas);
     }
 
     @PutMapping("/tareas/{id}/completar")
-    public ResponseEntity<?> completarTarea(
+    public ResponseEntity<TareaResponseDTO> completarTarea(
             @PathVariable Long id,
             Authentication authentication
     ) {
 
-        Optional<Tarea> tareaOptional =
-                tareaService.buscarPorId(id);
+        Tarea tarea =
+                tareaService.completarTarea(
+                        id,
+                        authentication.getName()
+                );
 
-        if (tareaOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Tarea tarea = tareaOptional.get();
-
-        if (!tarea.getCurso()
-                .getUsuario()
-                .getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes acceso a esta tarea");
-        }
-
-        if (!tarea.isCompletada()) {
-
-            tarea.setCompletada(true);
-
-            tareaService.guardarTarea(tarea);
-
-            Usuario usuario =
-                    tarea.getCurso().getUsuario();
-
-            gamificacionService.sumarPuntos(
-                    usuario,
-                    20
-            );
-        }
-
-        return ResponseEntity.ok(tarea);
+        return ResponseEntity.ok(
+                tareaMapper.toDTO(tarea)
+        );
     }
 
     @DeleteMapping("/tareas/{id}")
-    public ResponseEntity<?> eliminarTarea(
+    public ResponseEntity<Void> eliminarTarea(
             @PathVariable Long id,
             Authentication authentication
     ) {
 
-        Optional<Tarea> tareaOptional =
-                tareaService.buscarPorId(id);
-
-        if (tareaOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Tarea tarea = tareaOptional.get();
-
-        if (!tarea.getCurso()
-                .getUsuario()
-                .getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes permiso para eliminar esta tarea");
-        }
-
-        tareaService.eliminarTarea(id);
-
-        return ResponseEntity.ok(
-                "Tarea eliminada correctamente"
+        tareaService.eliminarTareaDelUsuario(
+                id,
+                authentication.getName()
         );
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

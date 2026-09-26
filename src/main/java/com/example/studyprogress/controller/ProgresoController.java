@@ -8,8 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
 @RestController
 @RequestMapping("/api")
 public class ProgresoController {
@@ -26,31 +24,24 @@ public class ProgresoController {
     }
 
     @GetMapping("/cursos/{cursoId}/progreso")
-    public ResponseEntity<?> obtenerProgresoCurso(
+    public ResponseEntity<ProgresoCursoResponse> obtenerProgreso(
             @PathVariable Long cursoId,
             Authentication authentication
     ) {
 
-        Optional<Curso> cursoOptional =
-                cursoService.buscarPorId(cursoId);
-
-        if (cursoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Curso curso = cursoOptional.get();
-
-        if (!curso.getUsuario()
-                .getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes acceso a este curso");
-        }
+        Curso curso =
+                cursoService.buscarCursoDelUsuario(
+                        cursoId,
+                        authentication.getName()
+                );
 
         ProgresoCursoResponse progreso =
-                progresoService.calcularProgresoCurso(curso);
+                progresoService.calcularProgresoCurso(
+                        curso
+                );
 
-        return ResponseEntity.ok(progreso);
+        return ResponseEntity.ok(
+                progreso
+        );
     }
 }

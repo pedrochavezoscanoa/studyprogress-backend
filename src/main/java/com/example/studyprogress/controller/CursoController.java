@@ -1,16 +1,20 @@
 package com.example.studyprogress.controller;
 
 import com.example.studyprogress.dto.CursoRequest;
+import com.example.studyprogress.dto.CursoResponseDTO;
+import com.example.studyprogress.exception.ResourceNotFoundException;
+import com.example.studyprogress.mapper.CursoMapper;
 import com.example.studyprogress.model.Curso;
 import com.example.studyprogress.model.Usuario;
 import com.example.studyprogress.service.CursoService;
 import com.example.studyprogress.service.UsuarioService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/cursos")
@@ -18,32 +22,32 @@ public class CursoController {
 
     private final CursoService cursoService;
     private final UsuarioService usuarioService;
+    private final CursoMapper cursoMapper;
 
     public CursoController(
             CursoService cursoService,
-            UsuarioService usuarioService
+            UsuarioService usuarioService,
+            CursoMapper cursoMapper
     ) {
         this.cursoService = cursoService;
         this.usuarioService = usuarioService;
+        this.cursoMapper = cursoMapper;
     }
 
     @PostMapping
-    public ResponseEntity<?> crearCurso(
-            @RequestBody CursoRequest request,
+    public ResponseEntity<CursoResponseDTO> crearCurso(
+            @Valid @RequestBody CursoRequest request,
             Authentication authentication
     ) {
 
-        String email = authentication.getName();
-
-        Optional<Usuario> usuarioOptional =
-                usuarioService.buscarPorEmail(email);
-
-        if (usuarioOptional.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body("Usuario no encontrado");
-        }
-
-        Usuario usuario = usuarioOptional.get();
+        Usuario usuario =
+                usuarioService.buscarPorEmail(
+                        authentication.getName()
+                ).orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Usuario no encontrado"
+                        )
+                );
 
         Curso curso = new Curso(
                 request.getNombre(),
@@ -51,85 +55,70 @@ public class CursoController {
                 usuario
         );
 
-        Curso nuevoCurso = cursoService.guardarCurso(curso);
+        Curso nuevoCurso =
+                cursoService.guardarCurso(curso);
 
-        return ResponseEntity.ok(nuevoCurso);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        cursoMapper.toDTO(nuevoCurso)
+                );
     }
 
     @GetMapping
-    public ResponseEntity<?> listarCursos(
+    public ResponseEntity<List<CursoResponseDTO>> listarCursos(
             Authentication authentication
     ) {
 
-        String email = authentication.getName();
-
-        Optional<Usuario> usuarioOptional =
-                usuarioService.buscarPorEmail(email);
-
-        if (usuarioOptional.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body("Usuario no encontrado");
-        }
-
-        List<Curso> cursos =
-                cursoService.listarCursosPorUsuario(
-                        usuarioOptional.get()
+        Usuario usuario =
+                usuarioService.buscarPorEmail(
+                        authentication.getName()
+                ).orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Usuario no encontrado"
+                        )
                 );
+
+        List<CursoResponseDTO> cursos =
+                cursoService
+                        .listarCursosPorUsuario(usuario)
+                        .stream()
+                        .map(cursoMapper::toDTO)
+                        .toList();
 
         return ResponseEntity.ok(cursos);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarCurso(
+    public ResponseEntity<CursoResponseDTO> buscarCurso(
             @PathVariable Long id,
             Authentication authentication
     ) {
 
-        Optional<Curso> cursoOptional =
-                cursoService.buscarPorId(id);
+        Curso curso =
+                cursoService.buscarCursoDelUsuario(
+                        id,
+                        authentication.getName()
+                );
 
-        if (cursoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Curso curso = cursoOptional.get();
-
-        if (!curso.getUsuario().getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes acceso a este curso");
-        }
-
-        return ResponseEntity.ok(curso);
+        return ResponseEntity.ok(
+                cursoMapper.toDTO(curso)
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarCurso(
+    public ResponseEntity<Void> eliminarCurso(
             @PathVariable Long id,
             Authentication authentication
     ) {
 
-        Optional<Curso> cursoOptional =
-                cursoService.buscarPorId(id);
-
-        if (cursoOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Curso curso = cursoOptional.get();
-
-        if (!curso.getUsuario().getEmail()
-                .equals(authentication.getName())) {
-
-            return ResponseEntity.status(403)
-                    .body("No tienes permiso para eliminar este curso");
-        }
-
-        cursoService.eliminarCurso(id);
-
-        return ResponseEntity.ok(
-                "Curso eliminado correctamente"
+        cursoService.eliminarCursoDelUsuario(
+                id,
+                authentication.getName()
         );
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

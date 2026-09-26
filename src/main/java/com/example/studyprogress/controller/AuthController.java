@@ -5,6 +5,8 @@ import com.example.studyprogress.dto.LoginRequest;
 import com.example.studyprogress.dto.RegistroRequest;
 import com.example.studyprogress.model.Usuario;
 import com.example.studyprogress.service.AuthService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,39 +21,32 @@ public class AuthController {
     }
 
     @PostMapping("/registro")
-    public ResponseEntity<?> registrar(@RequestBody RegistroRequest request) {
+    public ResponseEntity<Usuario> registrar(
+            @Valid @RequestBody RegistroRequest request
+    ) {
 
-        try {
-            Usuario usuario = authService.registrar(request);
-            return ResponseEntity.ok(usuario);
+        Usuario usuario =
+                authService.registrar(request);
 
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new AuthResponse(e.getMessage()));
-        }
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(usuario);
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
-            @RequestBody LoginRequest request
+            @Valid @RequestBody LoginRequest request
     ) {
 
-        String token = authService.login(request);
+        String token =
+                authService.login(request);
 
-        if (token == null) {
-            return ResponseEntity.status(401)
-                    .body(
-                            new AuthResponse(
-                                    "Email o contraseña incorrectos"
-                            )
-                    );
-        }
-
-        return ResponseEntity.ok(
+        AuthResponse response =
                 new AuthResponse(
                         "Inicio de sesión correcto",
                         token
-                )
-        );
+                );
+
+        return ResponseEntity.ok(response);
     }
 }

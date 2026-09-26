@@ -1,5 +1,6 @@
 package com.example.studyprogress.service;
 
+import com.example.studyprogress.dto.RecordatorioRequest;
 import com.example.studyprogress.model.Recordatorio;
 import com.example.studyprogress.model.Usuario;
 
@@ -9,7 +10,9 @@ import java.util.Optional;
 
 public interface RecordatorioService {
 
-    Recordatorio guardarRecordatorio(Recordatorio recordatorio);
+    Recordatorio guardarRecordatorio(
+            Recordatorio recordatorio
+    );
 
     List<Recordatorio> listarRecordatoriosPorUsuario(
             Usuario usuario
@@ -19,11 +22,33 @@ public interface RecordatorioService {
             Usuario usuario
     );
 
-    List<Recordatorio> listarPendientesParaEnviar(
+    Optional<Recordatorio> buscarPorId(
+            Long id
+    );
+
+    void eliminarRecordatorio(
+            Long id
+    );
+
+    List<Recordatorio> listarRecordatoriosPendientesHasta(
             LocalDateTime fechaHora
     );
 
-    Optional<Recordatorio> buscarPorId(Long id);
+    Recordatorio crearRecordatorio(
+            RecordatorioRequest request,
+            String email
+    );
 
-    void eliminarRecordatorio(Long id);
+    List<Recordatorio> listarRecordatoriosDelUsuario(
+            String email
+    );
+
+    List<Recordatorio> listarPendientesDelUsuario(
+            String email
+    );
+
+    void eliminarRecordatorioDelUsuario(
+            Long id,
+            String email
+    );
 }

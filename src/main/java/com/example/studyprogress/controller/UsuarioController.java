@@ -1,61 +1,77 @@
 package com.example.studyprogress.controller;
 
+import com.example.studyprogress.dto.UsuarioResponseDTO;
+import com.example.studyprogress.mapper.UsuarioMapper;
 import com.example.studyprogress.model.Usuario;
 import com.example.studyprogress.service.UsuarioService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@PreAuthorize("hasRole('ADMIN')")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final UsuarioMapper usuarioMapper;
 
-    public UsuarioController(UsuarioService usuarioService) {
-        this.usuarioService = usuarioService;
-    }
+    public UsuarioController(
+            UsuarioService usuarioService,
+            UsuarioMapper usuarioMapper
+    ) {
+        this.usuarioService =
+                usuarioService;
 
-    @PostMapping
-    public ResponseEntity<?> crearUsuario(@RequestBody Usuario usuario) {
-
-        if (usuarioService.existePorEmail(usuario.getEmail())) {
-            return ResponseEntity.badRequest().body("El email ya está registrado");
-        }
-
-        Usuario nuevoUsuario = usuarioService.guardarUsuario(usuario);
-        return ResponseEntity.ok(nuevoUsuario);
+        this.usuarioMapper =
+                usuarioMapper;
     }
 
     @GetMapping
-    public List<Usuario> listarUsuarios() {
-        return usuarioService.listarUsuarios();
+    public ResponseEntity<List<UsuarioResponseDTO>> listarUsuarios() {
+
+        List<UsuarioResponseDTO> usuarios =
+                usuarioService
+                        .listarUsuarios()
+                        .stream()
+                        .map(usuarioMapper::toDTO)
+                        .toList();
+
+        return ResponseEntity.ok(
+                usuarios
+        );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarUsuarioPorId(@PathVariable Long id) {
+    public ResponseEntity<UsuarioResponseDTO> buscarUsuario(
+            @PathVariable Long id
+    ) {
 
-        Optional<Usuario> usuario = usuarioService.buscarPorId(id);
+        Usuario usuario =
+                usuarioService.obtenerUsuarioPorId(
+                        id
+                );
 
-        if (usuario.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(usuario.get());
+        return ResponseEntity.ok(
+                usuarioMapper.toDTO(
+                        usuario
+                )
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarUsuario(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminarUsuario(
+            @PathVariable Long id
+    ) {
 
-        Optional<Usuario> usuario = usuarioService.buscarPorId(id);
+        usuarioService.eliminarUsuarioPorId(
+                id
+        );
 
-        if (usuario.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        usuarioService.eliminarUsuario(id);
-        return ResponseEntity.ok("Usuario eliminado correctamente");
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

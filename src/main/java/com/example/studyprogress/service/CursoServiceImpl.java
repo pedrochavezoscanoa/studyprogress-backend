@@ -1,5 +1,7 @@
 package com.example.studyprogress.service;
 
+import com.example.studyprogress.exception.ForbiddenOperationException;
+import com.example.studyprogress.exception.ResourceNotFoundException;
 import com.example.studyprogress.model.Curso;
 import com.example.studyprogress.model.Usuario;
 import com.example.studyprogress.repository.CursoRepository;
@@ -13,7 +15,9 @@ public class CursoServiceImpl implements CursoService {
 
     private final CursoRepository cursoRepository;
 
-    public CursoServiceImpl(CursoRepository cursoRepository) {
+    public CursoServiceImpl(
+            CursoRepository cursoRepository
+    ) {
         this.cursoRepository = cursoRepository;
     }
 
@@ -23,7 +27,9 @@ public class CursoServiceImpl implements CursoService {
     }
 
     @Override
-    public List<Curso> listarCursosPorUsuario(Usuario usuario) {
+    public List<Curso> listarCursosPorUsuario(
+            Usuario usuario
+    ) {
         return cursoRepository.findByUsuario(usuario);
     }
 
@@ -33,7 +39,39 @@ public class CursoServiceImpl implements CursoService {
     }
 
     @Override
-    public void eliminarCurso(Long id) {
-        cursoRepository.deleteById(id);
+    public Curso buscarCursoDelUsuario(
+            Long id,
+            String email
+    ) {
+
+        Curso curso = cursoRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Curso no encontrado"
+                        )
+                );
+
+        if (!curso.getUsuario()
+                .getEmail()
+                .equals(email)) {
+
+            throw new ForbiddenOperationException(
+                    "No tienes acceso a este curso"
+            );
+        }
+
+        return curso;
+    }
+
+    @Override
+    public void eliminarCursoDelUsuario(
+            Long id,
+            String email
+    ) {
+
+        Curso curso =
+                buscarCursoDelUsuario(id, email);
+
+        cursoRepository.delete(curso);
     }
 }

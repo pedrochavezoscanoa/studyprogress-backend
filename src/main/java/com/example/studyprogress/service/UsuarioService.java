@@ -7,15 +7,33 @@ import java.util.Optional;
 
 public interface UsuarioService {
 
-    Usuario guardarUsuario(Usuario usuario);
+    Usuario guardarUsuario(
+            Usuario usuario
+    );
 
     List<Usuario> listarUsuarios();
 
-    Optional<Usuario> buscarPorId(Long id);
+    Optional<Usuario> buscarPorId(
+            Long id
+    );
 
-    Optional<Usuario> buscarPorEmail(String email);
+    Optional<Usuario> buscarPorEmail(
+            String email
+    );
 
-    boolean existePorEmail(String email);
+    boolean existePorEmail(
+            String email
+    );
 
-    void eliminarUsuario(Long id);
+    void eliminarUsuario(
+            Long id
+    );
+
+    Usuario obtenerUsuarioPorId(
+            Long id
+    );
+
+    void eliminarUsuarioPorId(
+            Long id
+    );
 }

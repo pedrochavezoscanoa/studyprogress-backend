@@ -14,5 +14,13 @@ public interface CursoService {
 
     Optional<Curso> buscarPorId(Long id);
 
-    void eliminarCurso(Long id);
+    Curso buscarCursoDelUsuario(
+            Long id,
+            String email
+    );
+
+    void eliminarCursoDelUsuario(
+            Long id,
+            String email
+    );
 }
