@@ -396,7 +396,7 @@ El backend de StudyProgress se encuentra completamente desplegado y operativo en
 
 1. **Servidor de Aplicación (Amazon EC2):**
    * **Instancia:** `t3.micro` con Ubuntu Server.
-   * **Runtime:** Contenedor Docker multi-stage optimizado sobre Eclipse Temurin 17 JRE Alpine.
+   * **Runtime:** Contenedor Docker multi-stage optimizado sobre Eclipse Temurin 21 JRE Alpine.
    * **Firewall (Security Groups):** Puertos 22 (SSH administrativo) y 8080 (Ingreso público para peticiones HTTP y Swagger).
 
 2. **Capa de Persistencia (Amazon RDS):**
