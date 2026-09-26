@@ -411,9 +411,10 @@ Ciclo: 2026-2
 
 Integrantes:
 
-- COMPLETAR NOMBRE DEL INTEGRANTE 1
-- COMPLETAR NOMBRE DEL INTEGRANTE 2
-- COMPLETAR NOMBRE DEL INTEGRANTE 3
+- Pedro Maximo Chavez Oscanoa
+- Marcelo Mateo Rosillo Rodriguez 
+- Jorge Andrés Cuevas Sánchez
+- Aquino Reyna, Jesús Emmanuel
 
 ## Conclusiones
 
